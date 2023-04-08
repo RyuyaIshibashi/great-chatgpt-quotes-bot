@@ -8,7 +8,7 @@ services:
       args:
         - GOVERSION=1.20.0
     environment:
-      - ENV
+      - OPEN_AI_API_KEY=${OPEN_AI_API_KEY}
     ports:
       - 8080:8080
     volumes:
