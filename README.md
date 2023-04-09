@@ -9,11 +9,12 @@ resulting in the following architecture:
 
 ![image](./chat_architecture.jpg)
 
-# Twitter Account
+## Twitter Account
 Here is the actual Twitter account:  
 https://twitter.com/great_chatgpt
 
 ## Build file for Lambda
+You need to create an executable file and compress it into a zip format for Lambda.
 ```sh
 # build
 GOOS=linux go build -o main
