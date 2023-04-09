@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/michimani/gotwi"
 	"github.com/michimani/gotwi/tweet/managetweet"
 	"github.com/michimani/gotwi/tweet/managetweet/types"
@@ -13,10 +14,10 @@ import (
 )
 
 func main() {
-	execute()
+	lambda.Start(requestHandler)
 }
 
-func execute() {
+func requestHandler(ctx context.Context) (string, error) {
 	quote, err := generateQuote()
 
 	if err != nil {
@@ -28,6 +29,8 @@ func execute() {
 	if err != nil {
 		log.Panicf("tweetQuote error: %v", err)
 	}
+
+	return "success", nil
 }
 
 func generateQuote() (quote string, err error) {
