@@ -6,17 +6,28 @@ import (
 	"log"
 	"os"
 
-	"github.com/sashabaranov/go-openai"
+	"github.com/michimani/gotwi"
+	"github.com/michimani/gotwi/tweet/managetweet"
+	"github.com/michimani/gotwi/tweet/managetweet/types"
+	openai "github.com/sashabaranov/go-openai"
 )
 
 func main() {
+	execute()
+}
+
+func execute() {
 	quote, err := generateQuote()
 
 	if err != nil {
-		log.Panic(err)
+		log.Panicf("generateQuote error: %v", err)
 	}
 
-	fmt.Println(quote)
+	err = tweetQuote(quote)
+
+	if err != nil {
+		log.Panicf("tweetQuote error: %v", err)
+	}
 }
 
 func generateQuote() (quote string, err error) {
@@ -28,16 +39,19 @@ func generateQuote() (quote string, err error) {
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role: openai.ChatMessageRoleUser,
-					Content: `あなたは歴史上の偉人と仮定してください。
-					あなたは、困難に直面したり、障害に立ち向かう人々を勇気づけるための名言をたくさん残しています。
-					それを以下の形式で1つだけ出力してください。
-					また、この形式以外の説明や解説を出力しないでください。（重要）
+					Content: `あなたは架空の歴史上の偉人の名言をつぶやくTwitterBOTと仮定してください。
+					その偉人は、困難に直面したり、障害に立ち向かう人々を勇気づけるための名言をたくさん残しています。
+					あなたはTwitterBOTとして、その名言を以下の形式で1つだけつぶやいてください。
+					なお、文字数は140字以下として下さい。
 					'''
-					${名言} - ChatGPT (${職業})
+					「${名言}」 
+					ChatGPT (${職業})
 					'''
-
-					${名言}はあなたの名言です。100-150文字程度で記入してください。「ですます」調を使ってはいけません。
-					${職業}はあなたの職業です。
+					
+					${名言}はあなたの名言です。「ですます」調を使ってはいけません。
+					
+					${職業}はあなたの職業です。なお、「架空」「歴史上」「偉人」「成功者」「先人」という言葉は使ってはいけません。
+					具体的な職業名を使ってください。
 					`,
 				},
 			},
@@ -48,5 +62,34 @@ func generateQuote() (quote string, err error) {
 		return "", err
 	}
 
-	return resp.Choices[0].Message.Content, nil
+	quote = resp.Choices[0].Message.Content
+
+	fmt.Printf("generateQuote result: %v\n", quote)
+	return quote, nil
+}
+
+func tweetQuote(quote string) (err error) {
+	in := &gotwi.NewClientInput{
+		AuthenticationMethod: gotwi.AuthenMethodOAuth1UserContext,
+		OAuthToken:           os.Getenv("GOTWI_ACCESS_TOKEN"),
+		OAuthTokenSecret:     os.Getenv("GOTWI_ACCESS_TOKEN_SECRET"),
+	}
+
+	c, err := gotwi.NewClient(in)
+	if err != nil {
+		return err
+	}
+
+	p := &types.CreateInput{
+		Text: gotwi.String(quote),
+	}
+
+	res, err := managetweet.Create(context.Background(), c, p)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("tweetQuote result: [%s] %s\n", gotwi.StringValue(res.Data.ID), gotwi.StringValue(res.Data.Text))
+
+	return nil
 }
